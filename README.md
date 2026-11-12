@@ -51,7 +51,7 @@ Check that your `.env` credentials work (read-only, prints no secrets):
 | # | Document | Status |
 |---|---|---|
 | 00 | [Setup guide](docs/00-setup-guide.md) | Done |
-| 01 | Discovery | Phase 1 |
+| 01 | [Discovery](docs/01-discovery.md) | Done |
 | 02 | Requirements | Phase 2 |
 | 03 | Architecture | Phase 3 |
 | 04 | Field mapping | Phase 3 |

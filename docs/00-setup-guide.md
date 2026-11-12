@@ -111,7 +111,7 @@ Rate limits for privately distributed apps on free accounts (service keys follow
 ### 4a. Create the organisation
 
 1. Sign up at [zoho.com/in/books](https://www.zoho.com/in/books/). Zoho Books India lists a permanent **Free plan** ([pricing](https://www.zoho.com/in/books/pricing/pricing-comparison.html)). If sign-up puts you on a paid-plan trial, that is fine too; note which one you got.
-2. Organisation name: `Glow & Grace (Simulated)`. Country: **India**. State: **Maharashtra** (a simulated choice, recorded in Discovery; it decides when we charge CGST+SGST vs IGST).
+2. Organisation name: `Glow & Grace (Simulated)`. Country: **India**. State: **Haryana** (a simulated choice, recorded in Discovery; it decides when we charge CGST+SGST vs IGST).
 3. **Check your Zoho Books web address.** It should be `books.zoho.in`. That `.in` means your data lives in Zoho's India data centre, which is why `.env.example` uses `accounts.zoho.in` and `www.zohoapis.in`. If you see `.com`, tell me; the URLs change.
 4. **Skip GST setup for now** if Zoho asks for a GSTIN. Don't enter any real business's GSTIN. We configure tax settings deliberately in Phase 3.
 
