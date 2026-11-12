@@ -249,3 +249,6 @@ ngrok.yml
 .idea/
 .DS_Store
 Thumbs.db
+
+# HubSpot config file
+hubspot.config.yml
