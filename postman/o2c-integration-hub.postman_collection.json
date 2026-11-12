@@ -1,0 +1,231 @@
+{
+  "info": {
+    "name": "O2C Integration Hub — Phase 0 connectivity checks",
+    "description": "SIMULATED ENGAGEMENT — 'Glow & Grace' is a fictional client.\n\nOne working test call per system (Shopify, HubSpot, Zoho Books), plus the token requests each one needs first.\n\nRun in this order:\n1. Shopify › 1. Get access token\n2. Shopify › 2. Shop info (GraphQL)\n3. HubSpot › 1. List contacts (limit 1)\n4. Zoho Books › 1. Exchange grant code (ONE TIME ONLY)\n5. Zoho Books › 3. List organizations\n\nUse the environment 'O2C — local'. Put secrets in the CURRENT value column only.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Shopify",
+      "item": [
+        {
+          "name": "1. Get access token (client credentials)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Response has access_token', () => pm.expect(body.access_token).to.be.a('string'));",
+                  "// Save the token so the next request can use it. Lasts ~24 hours (expires_in = 86399).",
+                  "pm.environment.set('shopify_access_token', body.access_token);",
+                  "console.log('Granted scopes:', body.scope, '| expires_in:', body.expires_in);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "grant_type", "value": "client_credentials" },
+                { "key": "client_id", "value": "{{shopify_client_id}}" },
+                { "key": "client_secret", "value": "{{shopify_client_secret}}" }
+              ]
+            },
+            "url": {
+              "raw": "https://{{shopify_store}}.myshopify.com/admin/oauth/access_token",
+              "protocol": "https",
+              "host": ["{{shopify_store}}", "myshopify", "com"],
+              "path": ["admin", "oauth", "access_token"]
+            },
+            "description": "Exchanges the Dev Dashboard app's Client ID + Client secret for an Admin API access token (client credentials grant).\n\nOnly works when the app and the dev store are in the same Shopify organization. Error 'shop_not_permitted' means the store was not created from the Dev Dashboard.\n\nDocs: https://shopify.dev/docs/apps/build/dev-dashboard/get-api-access-tokens"
+          }
+        },
+        {
+          "name": "2. Shop info (GraphQL Admin API)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "// GraphQL can return HTTP 200 with an 'errors' array, so check for it explicitly.",
+                  "pm.test('No GraphQL errors', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.test('Shop name returned', () => pm.expect(body.data.shop.name).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Shopify-Access-Token", "value": "{{shopify_access_token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"{ shop { name myshopifyDomain currencyCode } }\"\n}"
+            },
+            "url": {
+              "raw": "https://{{shopify_store}}.myshopify.com/admin/api/{{shopify_api_version}}/graphql.json",
+              "protocol": "https",
+              "host": ["{{shopify_store}}", "myshopify", "com"],
+              "path": ["admin", "api", "{{shopify_api_version}}", "graphql.json"]
+            },
+            "description": "Smallest useful read: the store's name, domain and currency. Expect currencyCode = INR for an Indian store.\n\nDocs: https://shopify.dev/docs/api/admin-graphql"
+          }
+        }
+      ]
+    },
+    {
+      "name": "HubSpot",
+      "item": [
+        {
+          "name": "1. List contacts (limit 1)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response has results array', () => pm.expect(pm.response.json().results).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{hubspot_service_key}}" }
+            ],
+            "url": {
+              "raw": "{{hubspot_base_url}}/crm/v3/objects/contacts?limit=1&archived=false",
+              "host": ["{{hubspot_base_url}}"],
+              "path": ["crm", "v3", "objects", "contacts"],
+              "query": [
+                { "key": "limit", "value": "1" },
+                { "key": "archived", "value": "false" }
+              ]
+            },
+            "description": "Reads one contact. A new HubSpot account usually has sample contacts, so 'results' should not be empty. An empty array still proves the key works.\n\n401 = wrong or missing key. 403 = key is missing the crm.objects.contacts.read scope.\n\nDocs: https://developers.hubspot.com/docs/apps/developer-platform/build-apps/authentication/account-service-keys"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Zoho Books",
+      "item": [
+        {
+          "name": "1. Exchange grant code for tokens (ONE TIME ONLY)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test('No error in response', () => pm.expect(body.error).to.be.undefined);",
+                  "pm.test('Refresh token returned', () => pm.expect(body.refresh_token).to.be.a('string'));",
+                  "pm.environment.set('zoho_access_token', body.access_token);",
+                  "pm.environment.set('zoho_refresh_token', body.refresh_token);",
+                  "console.log('Copy zoho_refresh_token from the environment into your .env file now.');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{zoho_accounts_url}}/oauth/v2/token?grant_type=authorization_code&client_id={{zoho_client_id}}&client_secret={{zoho_client_secret}}&code={{zoho_grant_code}}",
+              "host": ["{{zoho_accounts_url}}"],
+              "path": ["oauth", "v2", "token"],
+              "query": [
+                { "key": "grant_type", "value": "authorization_code" },
+                { "key": "client_id", "value": "{{zoho_client_id}}" },
+                { "key": "client_secret", "value": "{{zoho_client_secret}}" },
+                { "key": "code", "value": "{{zoho_grant_code}}" }
+              ]
+            },
+            "description": "Turns the short-lived grant code from the Self Client into an access token (1 hour) and a refresh token (no expiry until revoked).\n\nThe grant code is single-use and expires within the few minutes you chose in the API Console, so generate it and run this request straight away. Error 'invalid_code' = code expired or already used: generate a new one.\n\nDocs: https://www.zoho.com/books/api/v3/oauth/"
+          }
+        },
+        {
+          "name": "2. Refresh access token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.test('Access token returned', () => pm.expect(body.access_token).to.be.a('string'));",
+                  "pm.environment.set('zoho_access_token', body.access_token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{zoho_accounts_url}}/oauth/v2/token?grant_type=refresh_token&client_id={{zoho_client_id}}&client_secret={{zoho_client_secret}}&refresh_token={{zoho_refresh_token}}",
+              "host": ["{{zoho_accounts_url}}"],
+              "path": ["oauth", "v2", "token"],
+              "query": [
+                { "key": "grant_type", "value": "refresh_token" },
+                { "key": "client_id", "value": "{{zoho_client_id}}" },
+                { "key": "client_secret", "value": "{{zoho_client_secret}}" },
+                { "key": "refresh_token", "value": "{{zoho_refresh_token}}" }
+              ]
+            },
+            "description": "Use whenever the access token has expired (after 1 hour). This is exactly what the FastAPI app will do automatically in Phase 5."
+          }
+        },
+        {
+          "name": "3. List organizations",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "// Zoho Books returns code 0 for success in the JSON body.",
+                  "pm.test('Zoho code is 0', () => pm.expect(body.code).to.eql(0));",
+                  "if (body.organizations && body.organizations.length) {",
+                  "  pm.environment.set('zoho_organization_id', body.organizations[0].organization_id);",
+                  "  console.log('Saved organization_id of:', body.organizations[0].name);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Zoho-oauthtoken {{zoho_access_token}}" }
+            ],
+            "url": {
+              "raw": "{{zoho_api_base}}/organizations",
+              "host": ["{{zoho_api_base}}"],
+              "path": ["organizations"]
+            },
+            "description": "Lists the Zoho Books organizations this token can access and saves the first organization_id. Every other Zoho Books call needs ?organization_id=...\n\nNote the header format: 'Zoho-oauthtoken <token>', not 'Bearer'.\n\nNeeds scope ZohoBooks.settings.READ. Docs: https://www.zoho.com/books/api/v3/organizations/"
+          }
+        }
+      ]
+    }
+  ]
+}

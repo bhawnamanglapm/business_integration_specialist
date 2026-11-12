@@ -1,0 +1,10 @@
+# Pinned versions, verified to install on Python 3.14 (Nov 2026).
+# Pinning means everyone who installs gets exactly the same versions.
+
+fastapi==0.162.5            # web framework: receives Shopify webhooks
+uvicorn[standard]==0.54.0   # server that runs the FastAPI app
+pydantic==2.14.3            # validates and shapes JSON payloads
+pydantic-settings==2.16.2   # reads settings from .env into a typed object
+httpx==0.28.1               # HTTP client for calling HubSpot and Zoho Books
+python-dotenv==1.2.4        # loads .env files
+pytest==9.2.0               # test runner

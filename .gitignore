@@ -218,3 +218,34 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# ---------------------------------------------------------------
+# Project-specific rules (o2c integration hub)
+# ---------------------------------------------------------------
+# Secrets: only .env.example is committed, never a real .env
+.env.*
+!.env.example
+
+# Local SQLite databases (idempotency keys, failed records)
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Postman exports that may hold real tokens. Commit only the
+# *.template.json files, which have empty values.
+postman/*.postman_environment.json
+postman/*.postman_globals.json
+
+# Logs
+logs/
+*.log
+
+# ngrok local config
+ngrok.yml
+
+# Editor / OS clutter
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
