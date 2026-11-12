@@ -6,7 +6,7 @@ Engagement documents, in the order a client would receive them.
 |---|---|---|
 | 00-setup-guide.md | 0 — Setup | Done |
 | 01-discovery.md | 1 — Discovery | Done |
-| 02-requirements.md | 2 — Requirements | Not started |
+| 02-requirements.md | 2 — Requirements | Done |
 | 03-architecture.md | 3 — Solution design | Not started |
 | 04-field-mapping.md | 3 — Solution design | Not started |
 | 05-error-handling.md | 3 — Solution design | Not started |

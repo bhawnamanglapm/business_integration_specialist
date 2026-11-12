@@ -9,12 +9,12 @@ Glow & Grace sells on Shopify. An operations executive re-types every order into
 
 ## The solution
 
-Automate order-to-cash so that every paid Shopify order flows to the CRM and the accounting system **correctly, exactly once**, with failures caught and visible.
+Automate order-to-cash so that every Shopify order flows to the CRM and the accounting system **correctly, exactly once**, with failures caught and visible.
 
 | Flow | Trigger | Outcome |
 |---|---|---|
-| 1. Order-to-cash (core) | Shopify order paid | HubSpot contact + deal → Zoho Books customer → GST invoice → payment recorded → alert |
-| 2. Refunds | Shopify refund | Zoho Books credit note → HubSpot deal updated |
+| 1. Order-to-cash (core) | Prepaid order paid, or COD order fulfilled | HubSpot contact + deal → Zoho Books customer → GST invoice → payment recorded (COD: when marked paid) → alert on failure |
+| 2. Refunds, returns, cancellations | Shopify refund, cancellation, or `RTO` tag | Zoho Books credit note (+ refund recorded) → HubSpot deal updated |
 | 3. Lead-to-customer (stretch) | Website form | HubSpot lead → deal won → Zoho Books customer |
 
 Built twice, on purpose:
@@ -52,7 +52,7 @@ Check that your `.env` credentials work (read-only, prints no secrets):
 |---|---|---|
 | 00 | [Setup guide](docs/00-setup-guide.md) | Done |
 | 01 | [Discovery](docs/01-discovery.md) | Done |
-| 02 | Requirements | Phase 2 |
+| 02 | [Requirements](docs/02-requirements.md) | Done |
 | 03 | Architecture | Phase 3 |
 | 04 | Field mapping | Phase 3 |
 | 05 | Error handling | Phase 3 |
