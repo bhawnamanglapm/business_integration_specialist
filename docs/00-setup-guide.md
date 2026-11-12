@@ -98,9 +98,9 @@ Create 3 products with INR prices, for example: "Vitamin C Face Serum 30ml" ₹8
       - `crm.objects.deals.write`
    4. **Create**, confirm, then copy the key into `.env` as `HUBSPOT_SERVICE_KEY`.
 
-**Two things I could not confirm from the docs. Tell me what you find:**
-- Whether service keys are available on the **free** CRM tier. The docs say super admins can create them, and the account creator is a super admin. If you don't see **Keys → Service keys**, stop there; our fallback options are a HubSpot project-based app with a static token (needs the HubSpot CLI) or a documented mock.
-- Whether linking a deal to a contact (an "association") needs an extra scope. We'll check the associations API reference in Phase 3 before writing that code.
+**Open questions, and what Phase 0 found:**
+- *Are service keys available on the free CRM tier?* **Yes (confirmed 13 Nov 2026).** A service key created on this project's free CRM account passed the contacts read check. Fallbacks, if a future account lacks **Keys → Service keys**: a HubSpot project-based app with a static token (needs the HubSpot CLI) or a documented mock.
+- *Does linking a deal to a contact (an "association") need an extra scope?* Still open. We'll check the associations API reference in Phase 3 before writing that code.
 
 Rate limits for privately distributed apps on free accounts (service keys follow the same limits): **100 requests per 10 seconds** and **250,000 per day**. We'll design the retry logic around these.
 
@@ -120,7 +120,7 @@ Rate limits for privately distributed apps on free accounts (service keys follow
 A **Self Client** is Zoho's option for a back-end program that only talks to *your own* organisation, with no login screen. It fits our server-to-server integration.
 
 1. Open the Zoho API Console for India: `https://api-console.zoho.in`.
-   *Unverified detail:* Zoho's Books docs link to `api-console.zoho.com`. Zoho warns that tokens must be generated on the same data centre as your account. If the `.in` console redirects or doesn't load, use the `.com` one and tell me, and we'll check the multi-data-centre settings together. ([Zoho multi-DC docs](https://www.zoho.com/accounts/protocol/oauth/multi-dc.html))
+   *Confirmed 13 Nov 2026:* the `.in` console works for an India-edition organisation, and the resulting client is **not** recognised by `accounts.zoho.com` (`invalid_client`). Zoho's Books docs link to `api-console.zoho.com`, but tokens must be generated on the same data centre as your account. ([Zoho multi-DC docs](https://www.zoho.com/accounts/protocol/oauth/multi-dc.html))
 2. **Add client → Self Client → Create Now.**
 3. In the **Client Secret** tab, copy Client ID and Client Secret into `.env` and Postman.
 4. Have Postman open and ready (Step 7) **before** the next part, because the code it gives you expires in minutes.
@@ -131,6 +131,9 @@ A **Self Client** is Zoho's option for a back-end program that only talks to *yo
    - **Description:** `o2c-integration-hub phase 0`.
    - **Create**, and choose your Zoho Books organisation if asked.
 6. Copy the code into Postman as `zoho_grant_code` and run **Zoho Books › 1. Exchange grant code** immediately (Step 7).
+   **Quicker alternative (no Postman):** run `.\.venv\Scripts\python.exe scripts\zoho_exchange_grant_code.py` first, then generate the code and paste it at the hidden prompt. The script saves `ZOHO_REFRESH_TOKEN` and `ZOHO_ORGANIZATION_ID` into `.env` without displaying them.
+
+**Common mistake:** a grant code, an access token and a refresh token all look alike (`1000.<hex>.<hex>`). If the connectivity check says `invalid_code` on token refresh, the value in `ZOHO_REFRESH_TOKEN` is not a valid refresh token; generate a new grant code and exchange it again.
 
 **What these scopes mean:** customers (contacts), invoices, payments and credit notes are the four things our flows create, and `settings.READ` lets us read organisation details and, we expect, items and taxes. Scope names come from the [Zoho Books OAuth page](https://www.zoho.com/books/api/v3/oauth/). I found no single "full access" scope documented there, so we list each one; that is least privilege anyway. If Phase 3 shows we need to create items, we'll regenerate with `ZohoBooks.settings.ALL`, a 2-minute job.
 
@@ -147,7 +150,7 @@ A **Self Client** is Zoho's option for a back-end program that only talks to *yo
 ## Step 5 — Make (free plan) (10 min)
 
 1. Sign up at [make.com](https://www.make.com). Any hosting region is fine.
-2. Note the free-plan limits on the [pricing page](https://www.make.com/en/pricing). It states **1,000 credits per month**. I could not confirm the number of active scenarios or the minimum schedule interval from that page, so write down what your account shows; it affects Phase 4.
+2. Note the free-plan limits on the [pricing page](https://www.make.com/en/pricing). It states **1,000 credits per month**, and the account's **Subscription** page confirms it (13 Nov 2026). The number of active scenarios and the minimum schedule interval are not shown there; confirm them in Phase 4 from the scenario schedule settings, because they affect the Make design.
 3. Nothing to build yet. We connect Shopify, HubSpot and Zoho inside Make in Phase 4.
 
 ---
@@ -156,8 +159,9 @@ A **Self Client** is Zoho's option for a back-end program that only talks to *yo
 
 Shopify must send webhooks to a public HTTPS address, but our FastAPI app runs on `localhost`. ngrok creates a temporary public URL that forwards to your laptop.
 
-1. Create a free account at [ngrok.com](https://ngrok.com) and install it from [ngrok.com/download](https://ngrok.com/download).
-2. Copy your authtoken from the ngrok dashboard and run:
+1. Create a free account at [ngrok.com](https://ngrok.com) and install it from [ngrok.com/download](https://ngrok.com/download) (or `winget install ngrok.ngrok`).
+   **Then run `ngrok update`.** Free accounts require agent version 3.29.0 or newer (`ERR_NGROK_121`), and in Nov 2026 winget installed 3.3.1.
+2. Copy your **authtoken** from [Your Authtoken](https://dashboard.ngrok.com/get-started/your-authtoken) in the ngrok dashboard. Don't confuse it with an API key or AI Gateway key, which start with `ng-` and give `ERR_NGROK_105` if used here. Then run:
    `ngrok config add-authtoken <your-token>`
    This saves the token in ngrok's own config file in your user profile, not in this repo.
 3. Test: `ngrok http 8000`. You should see a `Forwarding https://….ngrok-free.app → http://localhost:8000` line. Press Ctrl+C to stop. (Nothing is listening on port 8000 yet; that comes in Phase 5.)
@@ -185,15 +189,27 @@ Shopify must send webhooks to a public HTTPS address, but our FastAPI app runs o
 
 ---
 
+## Step 8 — Check everything from code (1 min)
+
+```powershell
+.\.venv\Scripts\python.exe scripts\check_connectivity.py
+```
+
+It makes one read-only call to each system using `.env` and prints `PASS` / `FAIL` / `SKIP` with a short reason (never a secret). This proves the *app's* configuration works, not just Postman's. Expected: `3/3 systems passed.`
+
+---
+
 ## Done checklist
 
-- [ ] `.venv` created, `pip install` finished without errors
-- [ ] `.env` exists, is filled in, and `git status` does **not** list it
-- [ ] Shopify dev store (INR, India) with 3 products; app installed
-- [ ] HubSpot service key created with 4 scopes (or blocker reported)
-- [ ] Zoho Books India org created; refresh token and organisation ID saved
-- [ ] Make account created; free-plan limits noted
-- [ ] ngrok installed and authenticated
-- [ ] All 5 Postman requests green
+Status as of 13 Nov 2026:
 
-Send me: which steps passed, any errors (with secrets hidden), and whether HubSpot service keys and the `.in` Zoho console worked. That decides what is **live vs mocked** in the README.
+- [x] `.venv` created, `pip install` finished without errors
+- [x] `.env` exists, is filled in, and `git status` does **not** list it
+- [x] Shopify dev store (INR) with products; app installed
+- [x] HubSpot service key created (contacts read confirmed; other scopes exercised in Phase 3)
+- [x] Zoho Books India org created; refresh token and organisation ID saved
+- [x] Make account created; credits noted (scenario and interval limits: confirm in Phase 4)
+- [x] ngrok installed, updated and authenticated; test tunnel came online
+- [x] `scripts/check_connectivity.py` reports 3/3 passed (used in place of the Postman requests)
+
+Outcome: all four systems are **live**; see *What is live vs mocked* in the [README](../README.md).

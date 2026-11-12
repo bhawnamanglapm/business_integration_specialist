@@ -27,18 +27,24 @@ _Diagram added in Phase 3._
 
 ## What is live vs mocked
 
-_Confirmed after Phase 0 connectivity checks._
+Confirmed by the Phase 0 connectivity check on 13 Nov 2026 (`scripts/check_connectivity.py`, 3/3 passed).
 
 | System | Status | Notes |
 |---|---|---|
-| Shopify (dev store) | TBC | |
-| HubSpot (free CRM) | TBC | |
-| Zoho Books (India) | TBC | |
-| Make (free plan) | TBC | |
+| Shopify (dev store) | **Live** | Dev Dashboard app, client credentials grant, GraphQL Admin API `2026-10`. Store currency INR. |
+| HubSpot (free CRM) | **Live** | Service key (Bearer token). Contacts read confirmed; write and deals scopes are exercised in Phase 3. |
+| Zoho Books (India) | **Live** | Self Client OAuth on the India data centre (`accounts.zoho.in`, `www.zohoapis.in`). |
+| Make (free plan) | **Live** | 1,000 credits/month. Active-scenario limit and minimum schedule interval to be confirmed in Phase 4. |
 
 ## How to run
 
 _Added in Phase 5._ Environment setup: [docs/00-setup-guide.md](docs/00-setup-guide.md).
+
+Check that your `.env` credentials work (read-only, prints no secrets):
+
+```powershell
+.\.venv\Scripts\python.exe scripts\check_connectivity.py
+```
 
 ## Documents
 
